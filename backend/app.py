@@ -54,7 +54,7 @@ configuration = plaid.Configuration(
 
 api_client = plaid.ApiClient(configuration)
 client = plaid_api.PlaidApi(api_client)
-access_token = None
+access_token = 'access-sandbox-0e607013-2948-4b08-9c29-247858617e0e' # testing access_token
 item_id = None
 
 products = []
@@ -124,16 +124,13 @@ def get_auth():
 
 @app.route('/api/transactions/sync', methods=['GET'])
 def get_transactions():
+
     # Set cursor to empty to receive all historical updates
     cursor = ''
-
-    # New transaction updates since "cursor"
     added = []
-    modified = []
-    removed = [] # Removed transaction ids
     has_more = True
+
     try:
-        # Iterate through each page of new transaction updates for item
         while has_more:
             request = TransactionsSyncRequest(
                 access_token=access_token,
@@ -141,30 +138,37 @@ def get_transactions():
             )
             response = client.transactions_sync(request).to_dict()
             cursor = response['next_cursor']
-            # If no transactions are available yet, wait and poll the endpoint.
-            # Normally, we would listen for a webhook, but the Quickstart doesn't 
-            # support webhooks. For a webhook example, see 
-            # https://github.com/plaid/tutorial-resources or
-            # https://github.com/plaid/pattern
-            if cursor == '':
-                time.sleep(2)
-                continue  
-            # If cursor is not an empty string, we got results, 
-            # so add this page of results
             added.extend(response['added'])
-            modified.extend(response['modified'])
-            removed.extend(response['removed'])
             has_more = response['has_more']
-            pretty_print_response(response)
 
-        # Return the 8 most recent transactions
-        latest_transactions = sorted(added, key=lambda t: t['date'])[-8:]
+        # Initialize a dictionary to store spending by category
+        spending_by_category = {}
+
+        # Loop through all transactions
+        for transaction in added:
+            # Check if the transaction has a category field
+            if 'category' in transaction and len(transaction['category']) > 0:
+                # Get the main category (e.g., "Food and Drink", "Travel", etc.)
+                main_category = transaction['category'][0]
+
+                # Add the transaction amount to the relevant category
+                if main_category not in spending_by_category:
+                    spending_by_category[main_category] = 0
+
+                spending_by_category[main_category] += transaction['amount']
+
+        # Print spending by category for debugging
+        print(f"Spending by Category: {spending_by_category}")
+
         return jsonify({
-            'latest_transactions': latest_transactions})
+            'latest_transactions': added,  # Existing transactions
+            'spending_by_category': spending_by_category  # Total spending by each category
+        })
 
     except plaid.ApiException as e:
         error_response = format_error(e)
         return jsonify(error_response)
+
 
 
 if __name__ == '__main__':
