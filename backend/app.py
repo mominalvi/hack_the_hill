@@ -6,6 +6,7 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 from plaid.model.item_get_request import ItemGetRequest
+from plaid.model.transactions_recurring_get_request import TransactionsRecurringGetRequest
 from dotenv import load_dotenv
 import os
 import time
@@ -155,17 +156,31 @@ def get_transactions():
             modified.extend(response['modified'])
             removed.extend(response['removed'])
             has_more = response['has_more']
-            pretty_print_response(response)
-
         # Return the 8 most recent transactions
         latest_transactions = sorted(added, key=lambda t: t['date'])[-8:]
         return jsonify({
             'latest_transactions': latest_transactions})
 
     except plaid.ApiException as e:
+        print(e)
         error_response = format_error(e)
         return jsonify(error_response)
 
+
+@app.route('/api/transactions/recurring/get', methods=['GET'])
+def get_recurring_transactions():
+    global access_token
+    try:
+        recur_trans_request = TransactionsRecurringGetRequest(
+            access_token=access_token,
+        )
+        recur_trans_response = client.transactions_recurring_get(recur_trans_request)
+        # inflow_streams = recur_trans_response.inflow_streams
+        # outflow_streams = recur_trans_response.outflow_streams
+        return jsonify(recur_trans_response.to_dict())
+    except plaid.ApiException as e:
+        print(e)
+        return json.loads(e.body)
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True)

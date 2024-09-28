@@ -6,7 +6,34 @@ import {usePlaidLink} from 'react-plaid-link';
 
 axios.defaults.baseURL = 'http://localhost:8000';
 
-function PlaidAuth({public_token}){
+function PlaidAuth({public_token, access_token}){
+  
+  useEffect(() => {
+    async function fetchTransactions(){
+      const response = await axios.get('/api/transactions/sync');
+      if(response.status === 200){
+        console.log('Transactions: ', response.data);
+      }else{
+        console.log('Error fetching transactions');
+        throw new Error('Error fetching transactions');
+      }
+    }
+    fetchTransactions();
+  }, [])
+
+  useEffect(() => {
+    async function fetchRecurringTransactions(){
+      const response = await axios.get('/api/transactions/recurring/get');
+      if(response.status === 200){
+        console.log('Recurring Transactions: ', response.data);
+      }else{
+        console.log('Error fetching recurring transactions');
+        throw new Error('Error fetching recurring transactions');
+      }
+    }
+    
+    fetchRecurringTransactions();
+  }, [])
   return(
     <span>{public_token}</span>
   )
@@ -75,7 +102,7 @@ function App() {
   });
   
   //if public_token is available, render the PlaidAuth component else render the button to connect a bank account, because it means the user has not connected a bank account yet
-  return public_token ? <PlaidAuth public_token={public_token} /> : (
+  return public_token ? <PlaidAuth access_token={accessToken} public_token={public_token} /> : (
     <button onClick={() => open()} disabled={!ready}>
       Connect a bank account
     </button>
