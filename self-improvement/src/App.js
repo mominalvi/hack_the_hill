@@ -17,6 +17,8 @@ function App() {
   const [linkToken, setLinkToken] = useState(''); // plaid link token state gotten from the server
   const [public_token, setPublicToken] = useState(''); // plaid public token state gotten from the server
   const [metadata, setMetadata] = useState(''); // plaid metadata state gotten from the server
+  const [accessToken, setAccessToken] = useState(''); // plaid access token state gotten from the server
+  const [accounts, setAccounts] = useState([]); // plaid accounts state gotten from the server
 
   useEffect(() => {
     async function fetchData() {
@@ -31,6 +33,36 @@ function App() {
     }
     fetchData();
   }, []);
+
+  useEffect(() => {
+    async function ExchangePublicToken() {
+      const response = await axios.post('/api/item/public_token/exchange', {public_token});
+      
+      if (response.status === 200) {
+        console.log(response.data);
+        console.log('Access token: ', response.data.access_token);
+        setAccessToken(response.data.access_token);
+
+        //authenticating the user
+        const auth_response = await axios.get('/api/auth/get');
+
+        if(auth_response.status === 200){
+          console.log('User authenticated');
+          console.log(auth_response.data);
+          setAccounts(auth_response.data.accounts.eft);
+        }else{
+          console.log('Error authenticating user');
+          throw new Error('Error authenticating user');
+        }
+      }else{
+        console.log('Error fetching access token');
+        throw new Error('Error fetching access token');
+      }
+    }
+    if(public_token){
+      ExchangePublicToken();
+    }
+  }, [public_token])
 
   const { open, ready } = usePlaidLink({
     token: linkToken,

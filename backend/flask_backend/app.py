@@ -8,9 +8,13 @@ from plaid.model.country_code import CountryCode
 from plaid.model.item_get_request import ItemGetRequest
 from dotenv import load_dotenv
 import os
+import time
 import json
 from flask_cors import CORS
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.auth_get_request import AuthGetRequest
+from plaid.model.transactions_sync_request import TransactionsSyncRequest
+from utils import poll_with_retries, pretty_print_response, format_error
 
 app = Flask(__name__)
 CORS(app) # This will enable CORS for all routes
@@ -66,7 +70,7 @@ def create_link_token():
 
     # Create a link_token for the given user
     try:
-        request = LinkTokenCreateRequest(
+        link_token_request = LinkTokenCreateRequest(
                 products=products,
                 client_name="Hack The Hill Self-Improvement App",
                 country_codes=[CountryCode(country) for country in PLAID_COUNTRY_CODES],
@@ -77,7 +81,7 @@ def create_link_token():
                     client_user_id='user-id', #unique id for the user
                 )
             )
-        response = client.link_token_create(request)
+        response = client.link_token_create(link_token_request)
 
         # Send the data to the client
         return jsonify(response.to_dict())
@@ -85,23 +89,6 @@ def create_link_token():
         print(e)
         return json.loads(e.body)
 
-@app.route('/api/item', methods=['GET'])
-def item():
-    try:
-        request = ItemGetRequest(access_token=access_token)
-        response = client.item_get(request)
-        request = InstitutionsGetByIdRequest(
-            institution_id=response['item']['institution_id'],
-            country_codes=list(map(lambda x: CountryCode(x), PLAID_COUNTRY_CODES))
-        )
-        institution_response = client.institutions_get_by_id(request)
-        pretty_print_response(response.to_dict())
-        pretty_print_response(institution_response.to_dict())
-        return jsonify({'error': None, 'item': response.to_dict()[
-            'item'], 'institution': institution_response.to_dict()['institution']})
-    except plaid.ApiException as e:
-        error_response = format_error(e)
-        return jsonify(error_response)
     
 @app.route('/api/item/public_token/exchange', methods=['POST'])
 def public_token_exchange():
@@ -120,5 +107,65 @@ def public_token_exchange():
         return json.loads(e.body)
 
 
+@app.route('/api/auth/get', methods=['GET'])
+def get_auth():
+    global access_token
+    try:
+        auth_request = AuthGetRequest(access_token=access_token)
+        auth_response = client.auth_get(auth_request)
+        numbers = auth_response['numbers']
+        return jsonify(auth_response.to_dict())
+    except plaid.ApiException as e:
+        print(e)
+        return json.loads(e.body)
+    except Exception as e:
+        print(e)
+        return jsonify({'error': {'display_message': str(e)}})
+
+@app.route('/api/transactions/sync', methods=['GET'])
+def get_transactions():
+    # Set cursor to empty to receive all historical updates
+    cursor = ''
+
+    # New transaction updates since "cursor"
+    added = []
+    modified = []
+    removed = [] # Removed transaction ids
+    has_more = True
+    try:
+        # Iterate through each page of new transaction updates for item
+        while has_more:
+            request = TransactionsSyncRequest(
+                access_token=access_token,
+                cursor=cursor,
+            )
+            response = client.transactions_sync(request).to_dict()
+            cursor = response['next_cursor']
+            # If no transactions are available yet, wait and poll the endpoint.
+            # Normally, we would listen for a webhook, but the Quickstart doesn't 
+            # support webhooks. For a webhook example, see 
+            # https://github.com/plaid/tutorial-resources or
+            # https://github.com/plaid/pattern
+            if cursor == '':
+                time.sleep(2)
+                continue  
+            # If cursor is not an empty string, we got results, 
+            # so add this page of results
+            added.extend(response['added'])
+            modified.extend(response['modified'])
+            removed.extend(response['removed'])
+            has_more = response['has_more']
+            pretty_print_response(response)
+
+        # Return the 8 most recent transactions
+        latest_transactions = sorted(added, key=lambda t: t['date'])[-8:]
+        return jsonify({
+            'latest_transactions': latest_transactions})
+
+    except plaid.ApiException as e:
+        error_response = format_error(e)
+        return jsonify(error_response)
+
+
 if __name__ == '__main__':
-    app.run(port=8000)
+    app.run(port=8000, debug=True)
