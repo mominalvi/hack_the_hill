@@ -7,36 +7,31 @@
   pointer-events: none;
 }
 
-.logo {
-  position: absolute;
-  height: 70px;
-  width: 70px;
-  left: 10px;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Times New Roman', Times, serif;
-}
-
-.nav {
-  min-height: 100vh;
-  background-image: url();
-}
 
 .header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  padding: 20px 100px;
+  /* Full width of the screen */
+  /* Adjust padding */
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  /* Align logo to the left and navbar to the right */
+  align-items: center;
+  background-color: white;
+  /* Add background color if needed */
   z-index: 100;
+}
 
+.logo {
+  height: 70px;
+  width: 70px;
+}
+
+.navbar {
+  display: flex;
+  padding-right: 30px;
 }
 
 .navbar a {
@@ -45,7 +40,7 @@
   font-weight: 500;
   text-decoration: none;
   margin-left: 40px;
-
+  /* Space between the navigation links */
 }
 
 
