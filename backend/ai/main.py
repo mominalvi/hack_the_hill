@@ -1,4 +1,8 @@
 import google.generativeai as genai
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Directly pass your API key as a string
 # genai.configure(api_key="AIzaSyC8gBOzA3g17B2IzxEsrQBIwnApi0Apk48")
@@ -81,10 +85,36 @@ purchase_frequency_by_category = {
 summary = puruchase_freq_cat(purchase_frequency_by_category)
 # print(summary)
 
+def summarize_spending_by_date(spending_by_category_and_date):
+    summary = "Here is the spending summary:\n"
+    
+    # Loop through each category
+    for category, date_spending in spending_by_category_and_date.items():
+        summary += f"\nCategory: {category}\n"
+        for date, amount in date_spending.items():
+            summary += f"  On {date}, you spent: ${amount}\n"
+    
+    return summary
+
+# Example
+spending_by_category_and_date = {
+    "Food and Drink": {
+        "2024-09-18": 300.00,
+        "2024-09-19": 300.00
+    },
+    "Travel": {
+        "2024-09-20": 1200.00
+    }
+}
+summary = summarize_spending_by_date(spending_by_category_and_date)
+
+def test_analyze_with_gbt():
+    analysis = analyze_with_gbt(spending_by_category_and_date)
+    print(analysis)
 
 def analyze_with_gbt(spending_by_category):
 
-    genai.configure(api_key="AIzaSyC8gBOzA3g17B2IzxEsrQBIwnApi0Apk48")
+    genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
     prompt = f"""
     Below is a summary of spending by category:
@@ -100,3 +130,7 @@ def analyze_with_gbt(spending_by_category):
 summary = "Food: $300, Travel: $200, Entertainment: $150"
 analysis = analyze_with_gbt(summary)
 #print(analysis)
+
+if __name__ == "__main__":
+    # Your test function or main logic here
+    test_analyze_with_gbt()
