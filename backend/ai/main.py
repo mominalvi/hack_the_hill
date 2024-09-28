@@ -47,10 +47,39 @@ spending_by_category = {
 # summary = summarize_spending(spending_by_category)
 
 
-def puruchase_freq_cat(spending_by_category):
+def puruchase_freq_cat(purchase_frequency_by_category):
     categories = list(spending_by_category.keys())
     amounts = list(spending_by_category.values())
 
+    # Step 1: Total the number of purchases
+    total_purchases = sum(purchase_frequency_by_category.values())
+
+    # Step 2: Find the category with the highest and lowest purchase frequencies
+    most_frequent_category = max(purchase_frequency_by_category, key=purchase_frequency_by_category.get)
+    least_frequent_category = min(purchase_frequency_by_category, key=purchase_frequency_by_category.get)
+
+    # Step 3: Create the summary
+    summary = (
+        f"Total number of purchases: {total_purchases}\n"
+        f"The category with the most purchases is '{most_frequent_category}' with {purchase_frequency_by_category[most_frequent_category]} purchases.\n"
+        f"The category with the fewest purchases is '{least_frequent_category}' with {purchase_frequency_by_category[least_frequent_category]} purchases.\n"
+    )
+
+    # Return the summary
+    return summary
+
+# Example usage:
+purchase_frequency_by_category = {
+    "Food and Drink": 122,
+    "Payment": 49,
+    "Recreation": 25,
+    "Shops": 24,
+    "Transfer": 74,
+    "Travel": 98
+}
+
+summary = puruchase_freq_cat(purchase_frequency_by_category)
+print(summary)
 
 
 def analyze_with_gbt(spending_by_category):
@@ -70,4 +99,4 @@ def analyze_with_gbt(spending_by_category):
 
 summary = "Food: $300, Travel: $200, Entertainment: $150"
 analysis = analyze_with_gbt(summary)
-print(analysis)
+#print(analysis)
