@@ -86,14 +86,18 @@ summary = puruchase_freq_cat(purchase_frequency_by_category)
 # print(summary)
 
 def summarize_spending_by_date(spending_by_category_and_date):
-    summary = "Here is the spending summary:\n"
-    
-    # Loop through each category
+    # Step 1: summary dictionary to store structured info
+    summary = {}
+
+    # Step 2: Loop through each category
     for category, date_spending in spending_by_category_and_date.items():
-        summary += f"\nCategory: {category}\n"
+        summary[category] = {}
+
+        # Step 3: Loop through each date and spending amount
         for date, amount in date_spending.items():
-            summary += f"  On {date}, you spent: ${amount}\n"
-    
+            summary[category][date] = f"${amount}"
+
+    # Step 4: Return the summary dictionary
     return summary
 
 # Example
