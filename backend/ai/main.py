@@ -79,7 +79,7 @@ purchase_frequency_by_category = {
 }
 
 summary = puruchase_freq_cat(purchase_frequency_by_category)
-print(summary)
+# print(summary)
 
 
 def analyze_with_gbt(spending_by_category):
